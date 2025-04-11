@@ -5,17 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Fidgety</title>
     <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        width: 100%;
+        overflow: hidden;
+        position: fixed;
+      }
       body {
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        max-height: 100vh;
-        height: 100vh; /* Use full viewport height */
-        margin: 0;
         background-color: #f3f3f3;
-        position: relative;
-        overflow: hidden; /* Prevent scrolling */
+        -webkit-overflow-scrolling: touch; /* For iOS momentum scrolling */
       }
       .title {
         font-family: "Arial", sans-serif;
