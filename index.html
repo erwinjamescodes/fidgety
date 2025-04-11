@@ -3,13 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fidget Spinner</title>
+    <title>Fidgety</title>
     <style>
       body {
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
+        max-height: 100vh;
         height: 100vh; /* Use full viewport height */
         margin: 0;
         background-color: #f3f3f3;
@@ -21,10 +22,8 @@
         font-size: 2.2rem; /* Responsive font size */
         font-weight: bold;
         color: #333;
-        position: absolute;
-        top: 5vh; /* Relative to viewport height */
         text-align: center;
-        margin: 0;
+        margin: 0 0 10px 0;
       }
       .spinner-container {
         position: relative;
@@ -55,23 +54,33 @@
         background-position: center;
         transition: filter 0.3s ease;
       }
-      /* Bottom Controls Container */
-      .bottom-controls {
-        position: absolute;
-        bottom: 5vh;
+      /* Top Controls Container */
+      .top-controls {
+        position: fixed;
+        top: 48px;
         left: 0;
         right: 0;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 15px;
+        gap: 10px;
+        width: 100%;
+        z-index: 10;
+      }
+      /* Main Container to center everything */
+      .main-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        width: 100%;
       }
       /* Color Selection Buttons */
       .color-controls {
         display: flex;
         justify-content: center;
         gap: 10px;
-        position: static; /* Remove absolute positioning */
       }
       .color-btn {
         width: 35px;
@@ -111,11 +120,11 @@
         background-color: #4444ff;
       }
       .website-link {
-        position: static; /* Remove absolute positioning */
         text-align: center;
         font-family: "Arial", sans-serif;
         font-size: 1rem; /* Responsive font size */
-        width: 100%;
+        margin-top: 5px;
+        margin-bottom: 24px;
       }
       .website-link a {
         color: #555;
@@ -137,16 +146,10 @@
     <script defer src="/_vercel/insights/script.js"></script>
   </head>
   <body>
-    <h1 class="title">Fidgety</h1>
+    <!-- Fixed top controls -->
+    <div class="top-controls">
+      <h1 class="title">Fidgety</h1>
 
-    <div class="spinner-container">
-      <div class="spinner" id="spinner">
-        <div class="spinner-image" id="spinner-image"></div>
-      </div>
-    </div>
-
-    <!-- Bottom Controls (Color Selection and Website Link) -->
-    <div class="bottom-controls">
       <!-- Color Selection Buttons -->
       <div class="color-controls">
         <button
@@ -164,9 +167,18 @@
       </div>
 
       <!-- Website Link -->
-      <div class="website-link">
-        <a href="https://erwinjames.tech" target="_blank">erwinjames.tech</a>
+    </div>
+
+    <div class="main-container">
+      <div class="spinner-container">
+        <div class="spinner" id="spinner">
+          <div class="spinner-image" id="spinner-image"></div>
+        </div>
       </div>
+    </div>
+
+    <div class="website-link">
+      <a href="https://erwinjames.tech" target="_blank">erwinjames.tech</a>
     </div>
 
     <script>
