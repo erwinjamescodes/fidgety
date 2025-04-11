@@ -142,6 +142,45 @@
         color: #000;
         text-decoration: underline;
       }
+      /* Audio controls */
+      .audio-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .audio-label {
+        font-family: "Arial", sans-serif;
+        font-size: 0.9rem;
+        color: #333;
+      }
+      .sound-toggle {
+        appearance: none;
+        width: 40px;
+        height: 20px;
+        background: #ccc;
+        border-radius: 10px;
+        position: relative;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+      .sound-toggle:checked {
+        background: #4caf50;
+      }
+      .sound-toggle:before {
+        content: "";
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        top: 2px;
+        left: 2px;
+        background: white;
+        transition: 0.3s;
+      }
+      .sound-toggle:checked:before {
+        left: 22px;
+      }
     </style>
     <script>
       window.va =
@@ -173,7 +212,11 @@
         <button class="color-btn blue" data-color="blue" title="Blue"></button>
       </div>
 
-      <!-- Website Link -->
+      <!-- Audio Toggle -->
+      <div class="audio-controls">
+        <span class="audio-label">Sound:</span>
+        <input type="checkbox" id="sound-toggle" class="sound-toggle" checked />
+      </div>
     </div>
 
     <div class="main-container">
@@ -189,6 +232,137 @@
     </div>
 
     <script>
+      // Audio context and sound setup
+      let audioContext;
+      let oscillator = null;
+      let gainNode = null;
+      let soundEnabled = true;
+
+      // Sound toggle functionality
+      const soundToggle = document.getElementById("sound-toggle");
+      soundToggle.addEventListener("change", () => {
+        soundEnabled = soundToggle.checked;
+
+        if (!soundEnabled && oscillator) {
+          stopSound();
+        } else if (soundEnabled && Math.abs(velocity) > 1) {
+          initSound();
+        }
+      });
+
+      // Initialize Web Audio API
+      function initAudioContext() {
+        // Create audio context only when user interacts with the page
+        if (!audioContext) {
+          try {
+            audioContext = new (window.AudioContext ||
+              window.webkitAudioContext)();
+          } catch (e) {
+            console.error("Web Audio API is not supported in this browser", e);
+          }
+        }
+        return audioContext;
+      }
+
+      // Initialize oscillator and gain nodes
+      function initSound() {
+        if (!soundEnabled || !initAudioContext() || oscillator) return;
+
+        try {
+          // Create oscillator for the spinning sound
+          oscillator = audioContext.createOscillator();
+          oscillator.type = "sine"; // 'sine', 'square', 'sawtooth', 'triangle'
+          oscillator.frequency.value = 100; // Base frequency
+
+          // Create gain node to control volume
+          gainNode = audioContext.createGain();
+          gainNode.gain.value = 0;
+
+          // Connect nodes
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+
+          // Start the oscillator
+          oscillator.start();
+        } catch (e) {
+          console.error("Error initializing sound:", e);
+        }
+      }
+
+      // Update sound based on spinner velocity
+      function updateSound() {
+        if (!soundEnabled || !oscillator || !gainNode) return;
+
+        // Calculate absolute velocity (speed regardless of direction)
+        const speed = Math.abs(velocity);
+
+        if (speed < 0.1) {
+          // If almost stopped, fade out the sound
+          gainNode.gain.exponentialRampToValueAtTime(
+            0.001,
+            audioContext.currentTime + 0.5
+          );
+          // Stop sound after fade out
+          setTimeout(stopSound, 500);
+        } else {
+          // Update frequency based on speed (higher speed = higher pitch)
+          // Map velocity to a reasonable frequency range: 80Hz to 400Hz
+          const frequency = 80 + Math.min(speed * 4, 320);
+          oscillator.frequency.exponentialRampToValueAtTime(
+            frequency,
+            audioContext.currentTime + 0.1
+          );
+
+          // Update volume based on speed
+          // Map velocity to volume: 0 to 0.2 (keep it subtle)
+          const volume = Math.min(speed * 0.01, 0.2);
+          gainNode.gain.exponentialRampToValueAtTime(
+            volume,
+            audioContext.currentTime + 0.1
+          );
+        }
+      }
+
+      // Stop and cleanup sound nodes
+      function stopSound() {
+        if (oscillator) {
+          oscillator.stop();
+          oscillator.disconnect();
+          oscillator = null;
+        }
+        if (gainNode) {
+          gainNode.disconnect();
+          gainNode = null;
+        }
+      }
+
+      // Add tap sound when spinner is clicked
+      function playTapSound() {
+        if (!soundEnabled || !initAudioContext()) return;
+
+        try {
+          const tapOsc = audioContext.createOscillator();
+          const tapGain = audioContext.createGain();
+
+          tapOsc.type = "sine";
+          tapOsc.frequency.value = 220;
+
+          tapGain.gain.setValueAtTime(0.1, audioContext.currentTime);
+          tapGain.gain.exponentialRampToValueAtTime(
+            0.001,
+            audioContext.currentTime + 0.1
+          );
+
+          tapOsc.connect(tapGain);
+          tapGain.connect(audioContext.destination);
+
+          tapOsc.start();
+          tapOsc.stop(audioContext.currentTime + 0.1);
+        } catch (e) {
+          console.error("Error playing tap sound:", e);
+        }
+      }
+
       const spinner = document.getElementById("spinner");
       const spinnerImage = document.getElementById("spinner-image");
       let isDragging = false;
@@ -213,6 +387,9 @@
           // Apply the appropriate filter based on color
           const color = button.dataset.color;
           applyColorFilter(color);
+
+          // Play a tap sound on color change
+          playTapSound();
         });
       });
 
@@ -243,6 +420,10 @@
         previousY = e.clientY;
         velocity = 0; // Reset velocity on new drag
         e.preventDefault(); // Prevent text selection
+
+        // Initialize sound on user interaction
+        initAudioContext();
+        playTapSound();
       });
 
       // Touch support
@@ -252,6 +433,10 @@
         previousY = e.touches[0].clientY;
         velocity = 0; // Reset velocity on new drag
         e.preventDefault();
+
+        // Initialize sound on user interaction
+        initAudioContext();
+        playTapSound();
       });
 
       // Stop dragging
@@ -290,6 +475,11 @@
 
           previousX = e.clientX;
           previousY = e.clientY;
+
+          // Initialize sound if it's not already playing
+          if (Math.abs(velocity) > 1) {
+            initSound();
+          }
         }
       });
 
@@ -318,6 +508,11 @@
 
           previousX = e.touches[0].clientX;
           previousY = e.touches[0].clientY;
+
+          // Initialize sound if it's not already playing
+          if (Math.abs(velocity) > 1) {
+            initSound();
+          }
         }
         e.preventDefault(); // Prevent scrolling while dragging
       });
@@ -336,6 +531,9 @@
           velocity *= Math.pow(friction, timeScale);
           rotation += velocity * timeScale;
           spinner.style.transform = `rotate(${rotation}deg)`;
+
+          // Update sound based on current velocity
+          updateSound();
         }
         requestAnimationFrame(animate);
       }
@@ -346,18 +544,25 @@
       spinner.addEventListener("click", () => {
         if (!isDragging && Math.abs(velocity) > 1) {
           velocity = 0;
+          playTapSound();
         }
       });
 
       // Add keyboard controls
       document.addEventListener("keydown", (e) => {
+        // Initialize audio context on keyboard interaction
+        initAudioContext();
+
         if (e.key === "ArrowLeft") {
           velocity -= 2;
+          initSound();
         } else if (e.key === "ArrowRight") {
           velocity += 2;
+          initSound();
         } else if (e.key === " ") {
           // Spacebar to stop
           velocity = 0;
+          playTapSound();
         }
       });
     </script>
